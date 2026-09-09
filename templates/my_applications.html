@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+{% block title %}My Applications{% endblock %}
+
+{% block content %}
+<style>
+    /* Header & Text */
+    h3 { color: #f8fafc !important; }
+    strong { color: #f8fafc !important; }
+    small { color: #94a3b8 !important; }
+
+    /* Card Styling */
+    .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        padding: 2rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 16px !important;
+    }
+
+    /* Table Styling */
+    table { width: 100%; border-collapse: collapse; }
+    
+    thead tr { 
+        background: #0f172a !important; 
+        border-bottom: 2px solid #334155 !important; 
+    }
+    
+    th { 
+        padding: 16px !important; 
+        color: #94a3b8 !important; 
+        text-transform: uppercase; 
+        font-size: 0.85rem; 
+        letter-spacing: 0.5px;
+        text-align: left;
+    }
+
+    td { 
+        padding: 16px !important; 
+        color: #e2e8f0 !important; 
+        border-bottom: 1px solid #334155 !important; 
+    }
+
+    tr:last-child td { border-bottom: none !important; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Badge Overrides */
+    .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+    
+    .badge-blue { 
+        background: rgba(99, 102, 241, 0.2) !important; 
+        color: #818cf8 !important; 
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    
+    .badge-match { 
+        background: rgba(16, 185, 129, 0.2) !important; 
+        color: #34d399 !important; 
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .badge-pending { 
+        background: rgba(245, 158, 11, 0.2) !important; 
+        color: #fbbf24 !important; 
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Disabled Button Style */
+    .btn-processing {
+        border: 1px solid #475569 !important;
+        background: transparent !important;
+        color: #64748b !important;
+        padding: 6px 12px;
+        border-radius: 8px;
+        cursor: not-allowed;
+        opacity: 0.7;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div style="max-width: 1000px; margin: 0 auto;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin: 0;">Application History</h3>
+            <span class="badge badge-blue">{{ jobs|length }} Applications</span>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Job Role</th>
+                        <th>Company</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; font-size: 1rem; color: #f8fafc;">{{ job.title }}</div>
+                            <small>{{ job.type }}</small>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="width: 24px; height: 24px; background: #334155; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700;">
+                                    {{ job.company[0] }}
+                                </span>
+                                {{ job.company }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if current_user.placement_status == 'Placed' %}
+                                <span class="badge badge-match"><i class="fas fa-check"></i> Hired</span>
+                            {% elif current_user.placement_status == 'Interviewing' %}
+                                 <span class="badge badge-pending"><i class="fas fa-video"></i> In Progress</span>
+                            {% else %}
+                                <span class="badge badge-blue"><i class="fas fa-paper-plane"></i> Applied</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn-processing">
+                                <i class="fas fa-spinner fa-spin" style="margin-right: 5px;"></i> Processing...
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 4rem !important; color: #64748b;">
+                            <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <div style="margin-bottom: 1rem;">You haven't applied to any jobs yet.</div>
+                            <a href="{{ url_for('main.student_dash') }}" class="btn-primary" style="display: inline-block; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                Find Jobs
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

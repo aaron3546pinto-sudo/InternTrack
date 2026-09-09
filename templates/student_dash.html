@@ -1,0 +1,580 @@
+{% extends "layout.html" %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+
+{% set completion = 0 %}
+{% if current_user.github %}{% set completion = completion + 1 %}{% endif %}
+{% if current_user.linkedin %}{% set completion = completion + 1 %}{% endif %}
+{% if current_user.resume_link %}{% set completion = completion + 1 %}{% endif %}
+{% if current_user.education %}{% set completion = completion + 1 %}{% endif %}
+{% if current_user.experience %}{% set completion = completion + 1 %}{% endif %}
+{% if current_user.skills %}{% set completion = completion + 1 %}{% endif %}
+
+{% set percent = (completion / 6 * 100) | round | int %}
+
+<style>
+    /* Text Colors */
+    h1, h2, h3, h4, h5 { color: #f8fafc !important; }
+    p, span, div, li { color: #94a3b8; }
+    
+    /* Card & Container Overrides */
+    .card, .stat-card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        transition: all 0.2s;
+    }
+
+    /* Stat Cards */
+    .stat-value { color: #f8fafc !important; }
+    .stat-label { color: #94a3b8 !important; }
+    .stat-icon { background: rgba(255, 255, 255, 0.05) !important; }
+    
+    /* Job Cards */
+    .job-card {
+        padding: 1.5rem;
+        border-bottom: 1px solid #334155;
+        transition: background 0.2s;
+    }
+    .job-card:hover { background: rgba(255,255,255,0.02); }
+    .job-card:last-child { border-bottom: none; }
+    
+    .job-icon {
+        width: 48px; height: 48px; border-radius: 10px;
+        background: #334155; color: #f8fafc;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 1.2rem;
+    }
+    
+    .job-skill-tag {
+        background: rgba(99, 102, 241, 0.1); 
+        color: #818cf8 !important; 
+        padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+    }
+
+    /* Progress Ring */
+    .progress-ring {
+        width: 45px; height: 45px; border-radius: 50%;
+        background: radial-gradient(closest-side, #0f172a 79%, transparent 80% 100%),
+                    conic-gradient({% if percent == 100 %}#10b981{% else %}#6366f1{% endif %} {{ percent }}%, #334155 0);
+    }
+
+    /* NEW: ANALYZER MODAL STYLES */
+    .analyzer-content { text-align: center; padding: 1rem; }
+    
+    .scan-circle {
+        width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 1.5rem;
+        background: conic-gradient(from 0deg, #6366f1, transparent);
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+        animation: spin 1.5s linear infinite;
+    }
+    .scan-circle::before {
+        content: ''; position: absolute; width: 110px; height: 110px;
+        background: #1e293b; border-radius: 50%;
+    }
+    .scan-text {
+        position: absolute; color: white; font-weight: 700; font-size: 1.5rem;
+    }
+    
+    .skill-comparison {
+        display: flex; gap: 1rem; text-align: left; margin-top: 1.5rem;
+        background: #0f172a; padding: 1rem; border-radius: 12px; border: 1px solid #334155;
+    }
+    .skill-col { flex: 1; }
+    .skill-col h5 { font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .skill-item { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; margin-bottom: 4px; }
+    
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    /* Modal Overlay (Hidden by Default) */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+        opacity: 0; transition: opacity 0.2s;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    
+    .modal-card {
+        background: #1e293b; border: 1px solid #334155; width: 90%; max-width: 500px;
+        border-radius: 20px; box-shadow: 0 0 50px rgba(99, 102, 241, 0.2);
+        transform: scale(0.9); transition: transform 0.2s; overflow: hidden;
+    }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+</style>
+
+<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -1px;">
+            Hello, {{ current_user.name.split()[0] }}! 🚀
+        </h1>
+        <p style="font-size: 1.1rem;">Ready to land your dream job?</p>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 30px;">
+        <div style="text-align: right; border-right: 1px solid #334155; padding-right: 30px;">
+            <div style="font-weight: 800; font-size: 1.25rem; color: {% if current_user.placement_probability >= 80 %}#10b981{% elif current_user.placement_probability >= 50 %}#fbbf24{% else %}#ef4444{% endif %};">
+                <i class="fas fa-robot"></i> {{ current_user.placement_probability }}%
+            </div>
+            <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">ML Success Odds</div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="text-align: right;">
+                <div style="font-weight: 800; font-size: 1.25rem; color: {% if percent == 100 %}#10b981{% else %}#6366f1{% endif %};">
+                    {{ percent }}%
+                </div>
+                <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">Profile Strength</div>
+            </div>
+            <div class="progress-ring"></div>
+        </div>
+    </div>
+</div>
+
+{% if percent < 100 %}
+<div class="card" style="background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%) !important; border: none !important; position: relative; overflow: hidden; margin-bottom: 2rem;">
+    <div style="position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="color: white !important; font-size: 1.5rem; margin-bottom: 5px;">Complete Your Profile</h2>
+            <p style="color: rgba(255,255,255,0.9) !important;">You are missing <strong>{{ 6 - completion }} details</strong>. Complete your profile to get 3x more visibility.</p>
+        </div>
+        <a href="{{ url_for('main.edit_profile') }}" style="background: white; color: #4f46e5; padding: 10px 20px; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            Update Now
+        </a>
+    </div>
+    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: -30px; left: 50px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+</div>
+{% endif %}
+
+<div class="grid-4">
+    <div class="stat-card" onclick="showSection('applied')" id="card-applied">
+        <div class="stat-icon" style="color: #38bdf8 !important;"><i class="fas fa-paper-plane"></i></div>
+        <div>
+            <div class="stat-value">{{ applications|length }}</div>
+            <div class="stat-label">Applied</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="showSection('interview')" id="card-interview">
+        <div class="stat-icon" style="color: #fbbf24 !important;"><i class="fas fa-video"></i></div>
+        <div>
+            <div class="stat-value">{{ applications|selectattr("status", "equalto", "Interviewing")|list|length }}</div>
+            <div class="stat-label">Interviews</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="showSection('offer')" id="card-offer">
+        <div class="stat-icon" style="color: #4ade80 !important;"><i class="fas fa-trophy"></i></div>
+        <div>
+            <div class="stat-value">{{ applications|selectattr("status", "equalto", "Placed")|list|length }}</div>
+            <div class="stat-label">Offers</div>
+        </div>
+    </div>
+
+    <div class="stat-card active-card" onclick="showSection('recommend')" id="card-recommend">
+        <div class="stat-icon" style="color: #a78bfa !important;"><i class="fas fa-robot"></i></div>
+        <div>
+            <div class="stat-value">{{ jobs|length }}</div>
+            <div class="stat-label">AI Matches</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-3-1">
+    
+    <div>
+        <div id="section-recommend">
+            <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-sparkles" style="color: var(--accent);"></i> Recommended for You
+            </h3>
+            
+            <div class="card" style="padding: 0 !important; overflow: hidden;">
+                {% for job in jobs %}
+                <div class="job-card">
+                    <div style="display: flex; gap: 1.25rem; align-items: center; flex: 1;">
+                        <div class="job-icon" style="flex-shrink: 0; width: 56px; height: 56px; background: #0f172a; border: 1px solid var(--border-color);">
+                            {{ job.company[0] }}
+                        </div>
+                        
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: white;">{{ job.title }}</h4>
+                                {% if job.source == 'External' %}
+                                    <span class="badge" style="background: rgba(14, 165, 233, 0.1); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.2); font-size: 0.65rem; padding: 2px 8px; border-radius: 4px;">
+                                        <i class="fas fa-globe"></i> WEB API
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">
+                                <span style="font-weight: 600; color: #cbd5e1;">{{ job.company }}</span> &bull; {{ job.salary }}
+                            </p>
+                            <div style="margin-top: 8px; display: flex; gap: 6px;">
+                                {% if job.skills %}
+                                    {% for skill in job.skills.split(',')[:3] %}
+                                        <span class="job-skill-tag" style="background: #0f172a; border-color: #1e293b;">{{ skill.strip() }}</span>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+        
+                    <div class="job-actions-grid">
+                        <button onclick="openJobModal('{{ job.title }}', '{{ job.company }}', '{{ job.salary }}', '{{ job.skills }}', '{{ job.description|replace('\n', ' ')|replace('\r', ' ') }}', '{{ job.source }}', '{{ job.url }}', '{{ job._id }}', '{{ job._id|string in applied_ids }}')" 
+                                class="btn-outline">
+                            <i class="fas fa-info-circle"></i> &nbsp; Details
+                        </button>
+        
+                        <button onclick="analyzeFit('{{ job.skills }}', '{{ job.company }}')" 
+                                class="btn-outline" style="color: #a78bfa !important; border-color: rgba(167, 139, 250, 0.3) !important;">
+                            <i class="fas fa-wand-magic-sparkles"></i> &nbsp; AI Match
+                        </button>
+                        
+                        {% if job.source == 'External' %}
+                            <a href="{{ job.url }}" target="_blank" class="btn-secondary">
+                                Apply External <i class="fas fa-external-link-alt" style="font-size: 0.7rem; margin-left: 5px;"></i>
+                            </a>
+                        {% elif job._id|string in applied_ids %}
+                            <button class="btn-primary" style="background: #334155 !important; color: #94a3b8 !important; cursor: not-allowed; box-shadow: none;" disabled>
+                                <i class="fas fa-check-circle"></i> &nbsp; Applied
+                            </button>
+                        {% else %}
+                            <a href="{{ url_for('main.apply_job', job_id=job._id) }}" class="btn-primary">
+                                Apply Now
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                    <i class="fas fa-robot" style="font-size: 3rem; opacity: 0.2; margin-bottom: 1rem;"></i>
+                    <p>Scanning the web for more opportunities...</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="section-applications" style="display: none;">
+            <div class="section-header-row">
+                <h3 id="app-list-title" style="margin: 0;">My Applications</h3>
+                <button onclick="showSection('recommend')" class="btn-outline">
+                    <i class="fas fa-arrow-left" style="margin-right: 8px;"></i> Back to Feed
+                </button>
+            </div>
+            
+            <div class="card" style="padding: 0 !important; overflow: hidden;">
+                <table style="width: 100%; margin: 0;">
+                    <thead style="background: #0f172a;">
+                        <tr>
+                            <th style="padding: 1rem 1.5rem;">Role / Company</th>
+                            <th>Applied On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="appTableBody">
+                        </tbody>
+                </table>
+                <div id="no-apps-msg" style="display: none; padding: 2rem; text-align: center;">
+                    No applications found in this category.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">Quick Actions</h3>
+            <ul style="display: flex; flex-direction: column; gap: 10px; list-style: none;">
+                <li><a href="{{ url_for('main.edit_profile') }}" class="btn-outline" style="justify-content: flex-start; width: 100%; border: none; background: #0f172a;"><i class="fas fa-user-edit" style="width: 24px; color: #6366f1;"></i> Edit Profile</a></li>
+                <li><a href="{{ url_for('main.notifications') }}" class="btn-outline" style="justify-content: flex-start; width: 100%; border: none; background: #0f172a;"><i class="fas fa-bell" style="width: 24px; color: #fbbf24;"></i> Notifications</a></li>
+                <li><a href="{{ url_for('main.my_applications') }}" class="btn-outline" style="justify-content: flex-start; width: 100%; border: none; background: #0f172a;"><i class="fas fa-file-alt" style="width: 24px; color: #38bdf8;"></i> My Resume</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="analyzerModal">
+    <div class="modal-card">
+        <div class="modal-header" style="background: #0f172a; padding: 1.5rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: #a78bfa;"><i class="fas fa-brain"></i> AI Match Analysis</h3>
+            <button onclick="closeAnalyzer()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div class="analyzer-content">
+            <div id="scanLoader">
+                <div class="scan-circle">
+                    <span class="scan-text"><i class="fas fa-search"></i></span>
+                </div>
+                <h4 style="color: #f8fafc;">Analyzing Profile...</h4>
+                <p>Matching your skills against company requirements.</p>
+            </div>
+
+            <div id="scanResult" style="display: none;">
+                <div class="scan-circle" style="animation: none; background: #334155;">
+                    <span class="scan-text" id="matchScore" style="color: #4ade80;">95%</span>
+                </div>
+                
+                <h4 id="matchTitle">Excellent Match!</h4>
+                <p id="matchDesc">Your profile strongly aligns with this role.</p>
+
+                <div class="skill-comparison">
+                    <div class="skill-col">
+                        <h5><i class="fas fa-check" style="color: #4ade80;"></i> You Have</h5>
+                        <div id="hasSkills"></div>
+                    </div>
+                    <div class="skill-col" style="border-left: 1px solid #334155; padding-left: 1rem;">
+                        <h5><i class="fas fa-times" style="color: #ef4444;"></i> Missing</h5>
+                        <div id="missingSkills"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding: 1.5rem; text-align: center; border-top: 1px solid #334155;">
+            <button onclick="closeAnalyzer()" class="btn-outline" style="width: 100%;">Close Analysis</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. DATA PREP ---
+    const myApps = [
+        {% for app in applications %}
+        { role: "{{ app.role }}", company: "{{ app.company }}", date: "{{ app.date_applied.strftime('%Y-%m-%d') if app.date_applied else 'N/A' }}", status: "{{ app.status }}" },
+        {% endfor %}
+    ];
+    
+    // User Skills from Database
+    const userSkillsRaw = "{{ current_user.skills }}"; 
+    const userSkills = userSkillsRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+
+    // --- 2. AI ANALYZER LOGIC ---
+    function analyzeFit(jobSkillsRaw, company) {
+        // Show Modal & Loader
+        const modal = document.getElementById('analyzerModal');
+        const loader = document.getElementById('scanLoader');
+        const result = document.getElementById('scanResult');
+        
+        modal.classList.add('active');
+        loader.style.display = 'block';
+        result.style.display = 'none';
+
+        // Parse Job Skills
+        const jobSkills = jobSkillsRaw.toLowerCase().split(',').map(s => s.trim()).filter(s => s);
+        
+        // Calculate Match
+        let matchCount = 0;
+        let has = [];
+        let missing = [];
+
+        jobSkills.forEach(skill => {
+            if (userSkills.some(us => us.includes(skill) || skill.includes(us))) {
+                matchCount++;
+                has.push(skill);
+            } else {
+                missing.push(skill);
+            }
+        });
+
+        // Avoid division by zero
+        let score = jobSkills.length > 0 ? Math.round((matchCount / jobSkills.length) * 100) : 0;
+        if (score > 100) score = 100;
+
+        // Simulate AI Delay (1.5s)
+        setTimeout(() => {
+            loader.style.display = 'none';
+            result.style.display = 'block';
+            
+            // Populate Data
+            document.getElementById('matchScore').innerText = score + "%";
+            document.getElementById('matchScore').style.color = score > 70 ? '#4ade80' : (score > 40 ? '#fbbf24' : '#ef4444');
+            
+            const title = document.getElementById('matchTitle');
+            const desc = document.getElementById('matchDesc');
+            
+            if (score >= 80) {
+                title.innerText = "Excellent Match!";
+                title.style.color = "#4ade80";
+                desc.innerText = `You are a top candidate for ${company}.`;
+            } else if (score >= 50) {
+                title.innerText = "Good Potential";
+                title.style.color = "#fbbf24";
+                desc.innerText = "You have the core skills, but some gaps exist.";
+            } else {
+                title.innerText = "High Skill Gap";
+                title.style.color = "#ef4444";
+                desc.innerText = "Consider upskilling before applying.";
+            }
+
+            // Render Lists
+            const hasDiv = document.getElementById('hasSkills');
+            const missDiv = document.getElementById('missingSkills');
+            
+            hasDiv.innerHTML = has.length ? has.map(s => `<div class="skill-item"><i class="fas fa-check-circle" style="color:#4ade80;"></i> ${capitalize(s)}</div>`).join('') : '<div style="color:#64748b;">None</div>';
+            
+            missDiv.innerHTML = missing.length ? missing.map(s => `<div class="skill-item"><i class="fas fa-arrow-up" style="color:#ef4444;"></i> ${capitalize(s)}</div>`).join('') : '<div style="color:#64748b;">None!</div>';
+
+        }, 1200);
+    }
+
+    function closeAnalyzer() {
+        document.getElementById('analyzerModal').classList.remove('active');
+    }
+
+    // Helper to capitalize first letter
+    function capitalize(s) {
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function openJobModal(title, company, salary, skills, desc, source, url, jobId, hasApplied) {
+        document.getElementById('jobModalTitle').innerText = title;
+        document.getElementById('jobModalCompany').innerText = company;
+        document.getElementById('jobModalIcon').innerText = company.charAt(0);
+        document.getElementById('jobModalSalary').innerText = salary;
+        document.getElementById('jobModalSource').innerText = source === 'External' ? 'Adzuna Web API' : 'Campus Placement';
+        document.getElementById('jobModalDesc').innerText = desc || "No additional description provided by the recruiter.";
+
+        // Render Skill Tags
+        const skillDiv = document.getElementById('jobModalSkills');
+        skillDiv.innerHTML = '';
+        skills.split(',').forEach(s => {
+            if(s.trim()) {
+                const span = document.createElement('span');
+                span.className = 'job-skill-tag';
+                span.style.fontSize = '0.85rem';
+                span.innerText = s.trim();
+                skillDiv.appendChild(span);
+            }
+        });
+
+        // Update Apply Button dynamically based on application status
+        const applyBtn = document.getElementById('jobModalApplyBtn');
+        if (source === 'External') {
+            applyBtn.href = url;
+            applyBtn.target = "_blank";
+            applyBtn.innerText = "Apply via Adzuna";
+            applyBtn.style.background = "#0284c7";
+            applyBtn.style.pointerEvents = "auto";
+        } else if (hasApplied === 'True') {
+            applyBtn.href = "#";
+            applyBtn.innerHTML = "<i class='fas fa-check-circle'></i> Already Applied";
+            applyBtn.style.background = "#334155";
+            applyBtn.style.color = "#94a3b8";
+            applyBtn.style.pointerEvents = "none"; // Disables clicking
+        } else {
+            applyBtn.href = `/apply/${jobId}`;
+            applyBtn.target = "_self";
+            applyBtn.innerText = "Apply on Campus";
+            applyBtn.style.background = "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)";
+            applyBtn.style.color = "white";
+            applyBtn.style.pointerEvents = "auto";
+        }
+
+        document.getElementById('jobDetailModal').classList.add('active');
+    }
+
+function closeJobModal() {
+    document.getElementById('jobDetailModal').classList.remove('active');
+}
+
+    // --- 3. TAB TOGGLE LOGIC ---
+    function showSection(type) {
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-card'));
+        const card = document.getElementById('card-' + type);
+        if(card) card.classList.add('active-card');
+
+        const rec = document.getElementById('section-recommend');
+        const app = document.getElementById('section-applications');
+        const tbody = document.getElementById('appTableBody');
+        const noMsg = document.getElementById('no-apps-msg');
+        
+        if(type === 'recommend') {
+            rec.style.display = 'block';
+            app.style.display = 'none';
+        } else {
+            rec.style.display = 'none';
+            app.style.display = 'block';
+            
+            let filtered = myApps;
+            if(type === 'interview') filtered = myApps.filter(a => a.status === 'Interviewing');
+            if(type === 'offer') filtered = myApps.filter(a => ['Hired','Placed'].includes(a.status));
+            
+            tbody.innerHTML = '';
+            filtered.forEach(a => {
+                let badge = 'badge-blue';
+                if(a.status === 'Interviewing') badge = 'badge-yellow';
+                if(a.status === 'Hired' || a.status === 'Placed') badge = 'badge-green';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="padding: 1rem 1.5rem;">
+                            <div style="font-weight: 700; color: #f8fafc;">${a.role}</div>
+                            <div style="font-size: 0.85rem; color: #94a3b8;">${a.company}</div>
+                        </td>
+                        <td style="color: #94a3b8;">${a.date}</td>
+                        <td><span class="badge ${badge}">${a.status}</span></td>
+                    </tr>
+                `;
+            });
+            
+            if(filtered.length === 0) {
+                document.querySelector('#section-applications table').style.display = 'none';
+                noMsg.style.display = 'block';
+            } else {
+                document.querySelector('#section-applications table').style.display = 'table';
+                noMsg.style.display = 'none';
+            }
+        }
+    }
+    
+    // Close Modal on Outside Click
+    window.onclick = function(e) {
+        if(e.target == document.getElementById('analyzerModal')) closeAnalyzer();
+    }
+</script>
+<div id="jobDetailModal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 650px;">
+        <div class="modal-header" style="background: #0f172a; padding: 1.5rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="jobModalIcon" style="width: 50px; height: 50px; background: #6366f1; color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800;"></div>
+                <div>
+                    <h3 id="jobModalTitle" style="margin: 0; font-size: 1.3rem; color: #f8fafc;"></h3>
+                    <p id="jobModalCompany" style="margin: 0; color: #94a3b8; font-weight: 600;"></p>
+                </div>
+            </div>
+            <button onclick="closeJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.8rem; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div style="padding: 2rem; max-height: 70vh; overflow-y: auto;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; background: #0f172a; padding: 1rem; border-radius: 12px;">
+                <div>
+                    <label style="font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Salary / Stipend</label>
+                    <div id="jobModalSalary" style="color: #4ade80; font-weight: 700; font-size: 1.1rem;"></div>
+                </div>
+                <div>
+                    <label style="font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Source</label>
+                    <div id="jobModalSource" style="color: #38bdf8; font-weight: 700;"></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h4 style="color: #f8fafc; margin-bottom: 10px; font-size: 1rem; border-left: 4px solid #6366f1; padding-left: 10px;">Required Tech Stack</h4>
+                <div id="jobModalSkills" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <h4 style="color: #f8fafc; margin-bottom: 10px; font-size: 1rem; border-left: 4px solid #6366f1; padding-left: 10px;">About the Opportunity</h4>
+                <p id="jobModalDesc" style="color: #94a3b8; line-height: 1.7; font-size: 0.95rem;"></p>
+            </div>
+        </div>
+
+        <div style="padding: 1.5rem; border-top: 1px solid #334155; display: flex; gap: 1rem;">
+            <button onclick="closeJobModal()" class="btn-outline" style="flex: 1;">Close</button>
+            <a id="jobModalApplyBtn" href="#" class="btn-primary" style="flex: 2; text-align: center; text-decoration: none; justify-content: center;">Apply Now</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

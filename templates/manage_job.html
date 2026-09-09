@@ -1,0 +1,198 @@
+{% extends "layout.html" %}
+{% block title %}Manage Applications{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Text & Headers */
+    h2 { color: #f8fafc !important; }
+    p, small { color: #94a3b8 !important; }
+    strong { color: #f8fafc !important; }
+
+    /* Card Styling */
+    .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        padding: 2rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Fix for the Back Button Stretching */
+    .btn-outline {
+        background: transparent !important;
+        border: 1px solid #475569 !important;
+        color: #cbd5e1 !important;
+        padding: 10px 20px !important;
+        border-radius: 8px !important;
+        text-decoration: none !important;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: fit-content; /* Stops the horizontal stretching */
+        white-space: nowrap; /* Keeps text on one line */
+    }
+    .btn-outline:hover {
+        border-color: #6366f1 !important;
+        color: #6366f1 !important;
+    }
+
+    /* Table Styling */
+    table { width: 100%; border-collapse: collapse; }
+    
+    thead tr { 
+        background: #0f172a !important; 
+        border-bottom: 2px solid #334155 !important; 
+    }
+    
+    th { 
+        padding: 16px !important; 
+        color: #94a3b8 !important; 
+        text-transform: uppercase; 
+        font-size: 0.85rem; 
+        letter-spacing: 0.5px; 
+        text-align: left;
+    }
+
+    td { 
+        padding: 16px !important; 
+        color: #e2e8f0 !important; 
+        border-bottom: 1px solid #334155 !important; 
+        vertical-align: middle;
+    }
+
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    tr:last-child td { border-bottom: none !important; }
+
+    /* Action Buttons */
+    .btn-action {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-call { color: #fbbf24; border-color: #fbbf24; }
+    .btn-call:hover { background: rgba(251, 191, 36, 0.1); }
+
+    .btn-hire { color: #4ade80; border-color: #4ade80; }
+    .btn-hire:hover { background: rgba(74, 222, 128, 0.1); }
+
+    .btn-hold { color: #a78bfa; border-color: #a78bfa; }
+    .btn-hold:hover { background: rgba(167, 139, 250, 0.1); }
+
+    .btn-reject { color: #ef4444; border-color: #ef4444; }
+    .btn-reject:hover { background: rgba(239, 68, 68, 0.1); }
+
+    /* Header Section */
+    .job-header {
+        display: flex; justify-content: space-between; align-items: flex-start; /* Changed to flex-start */
+        border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 1.5rem;
+    }
+</style>
+
+<div style="max-width: 1100px; margin: 0 auto;">
+    <div class="card">
+        <div class="job-header">
+            <div>
+                <h2 style="margin: 0; font-size: 1.5rem;">{{ job.title }}</h2>
+                <p style="margin: 4px 0 0 0;">
+                    <i class="fas fa-building"></i> {{ job.company }} &bull; 
+                    <span style="color: #6366f1; font-weight: 600;">{{ job.applicants|length }} Applicants</span>
+                </p>
+            </div>
+            <a href="{{ url_for('main.admin_dash') }}" class="btn-outline">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Skills</th>
+                        <th>Current Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in job.applicants %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 36px; height: 36px; background: #334155; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white;">
+                                    {{ app.name[0] | upper }}
+                                </div>
+                                <div>
+                                    <div style="font-size: 1rem; font-weight: 600; color: #f8fafc;">{{ app.name }}</div>
+                                    <small>{{ app.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="max-width: 250px;">
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cbd5e1;">
+                                {{ app.skills }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if app.status == 'Hired' %}
+                                <span class="badge badge-green"><i class="fas fa-check"></i> HIRED</span>
+                            {% elif app.status == 'Interviewing' %}
+                                <span class="badge badge-yellow"><i class="fas fa-video"></i> INTERVIEWING</span>
+                            {% elif app.status == 'Hold' %}
+                                <span class="badge badge-purple"><i class="fas fa-pause"></i> ON HOLD</span>
+                            {% elif app.status == 'Rejected' %}
+                                <span class="badge badge-red"><i class="fas fa-times"></i> REJECTED</span>
+                            {% else %}
+                                <span class="badge badge-blue">APPLIED</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if app.status != 'Hired' %}
+                            <div style="display: flex; gap: 8px;">
+                                <a href="{{ url_for('main.update_application_status', job_id=job._id, user_id=app.user_id, action='interview') }}" 
+                                   class="btn-action btn-call" title="Call for Interview">
+                                   <i class="fas fa-video"></i>
+                                </a>
+                                
+                                <a href="{{ url_for('main.update_application_status', job_id=job._id, user_id=app.user_id, action='hire') }}" 
+                                   class="btn-action btn-hire" title="Hire Candidate">
+                                   <i class="fas fa-check"></i>
+                                </a>
+                                
+                                <a href="{{ url_for('main.update_application_status', job_id=job._id, user_id=app.user_id, action='hold') }}" 
+                                   class="btn-action btn-hold" title="Put on Hold">
+                                   <i class="fas fa-pause"></i>
+                                </a>
+                                
+                                <a href="{{ url_for('main.update_application_status', job_id=job._id, user_id=app.user_id, action='reject') }}" 
+                                   class="btn-action btn-reject" title="Reject">
+                                   <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                                <span style="color: #4ade80; font-weight: 600; font-size: 0.9rem;">
+                                    <i class="fas fa-award"></i> Offer Accepted
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 4rem !important; color: #64748b;">
+                            <i class="fas fa-users-slash" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <p>No applicants for this position yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

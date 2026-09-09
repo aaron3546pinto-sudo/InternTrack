@@ -1,0 +1,372 @@
+{% extends "layout.html" %}
+{% block title %}Edit Profile{% endblock %}
+
+{% block content %}
+<style>
+    /* Headers & Text */
+    h2, h4 { color: #f8fafc !important; }
+    p, label, small { color: #94a3b8 !important; }
+
+    /* Card Styling */
+    .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        padding: 2.5rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 16px;
+    }
+
+    /* Input Fields */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    input[type="url"],
+    input[type="date"],
+    textarea,
+    select {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #f8fafc !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        width: 100%;
+        transition: all 0.2s;
+        font-family: 'Inter', sans-serif;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+        outline: none;
+    }
+
+    /* File Input Styling */
+    .file-input {
+        background: #0f172a !important;
+        border: 1px dashed #475569 !important;
+        color: #94a3b8 !important;
+        cursor: pointer;
+        padding: 10px !important;
+        border-radius: 8px;
+    }
+    .file-input:hover {
+        border-color: #6366f1 !important;
+        background: #1e293b !important;
+    }
+
+    /* Grid Layouts */
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    @media (max-width: 768px) {
+        .form-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%) !important;
+        color: white !important;
+        border: none !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        cursor: pointer;
+    }
+    .btn-outline {
+        background: transparent !important;
+        border: 1px solid #475569 !important;
+        color: #cbd5e1 !important;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        text-decoration: none !important;
+        display: inline-block;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .btn-outline:hover {
+        border-color: #6366f1 !important;
+        color: #6366f1 !important;
+    }
+</style>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="card">
+        <div style="border-bottom: 1px solid #334155; padding-bottom: 1.5rem; margin-bottom: 2rem;">
+            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem;">Complete Your Profile</h2>
+            <p>Detailed profiles get 3x more interview calls. Provide as much info as possible.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            
+            <h4 style="margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="fas fa-user-circle"></i> Personal Details
+            </h4>
+            
+            <div class="form-grid">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Full Name</label>
+                    <input type="text" name="name" value="{{ current_user.name }}" required>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Education / Degree</label>
+                    <select data-name="education" name="education" onchange="toggleCustomField(this, 'custom_edu')" required>
+                        <option value="" disabled selected>Select your degree...</option>
+                        <option value="B.E. Computer Engineering">B.E. Computer Engineering</option>
+                        <option value="B.E. Information Technology">B.E. Information Technology</option>
+                        <option value="B.E. Electronics & Telecommunication">B.E. Electronics & Telecommunication</option>
+                        <option value="B.E. Mechanical Engineering">B.E. Mechanical Engineering</option>
+                        <option value="B.Sc. Data Science">B.Sc. Data Science</option>
+                        <option value="Other">Other (Please specify)</option>
+                    </select>
+                    <input type="text" id="custom_edu" placeholder="Type your custom degree..." style="display: none; margin-top: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Current CGPA</label>
+                    <input type="number" step="0.01" name="cgpa" value="{{ current_user.cgpa }}" placeholder="e.g. 8.5" required>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="fas fa-university"></i> Academic Details
+            </h4>
+            
+            <div class="form-grid">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Branch</label>
+                    <select name="branch" required>
+                        <option value="CMPN" {% if current_user.branch == 'CMPN' %}selected{% endif %}>Computer Engineering</option>
+                        <option value="IT" {% if current_user.branch == 'IT' %}selected{% endif %}>Information Technology</option>
+                        <option value="EXTC" {% if current_user.branch == 'EXTC' %}selected{% endif %}>Electronics & Telecom</option>
+                        <option value="MECH" {% if current_user.branch == 'MECH' %}selected{% endif %}>Mechanical Engineering</option>
+                        <option value="ELEC" {% if current_user.branch == 'ELEC' %}selected{% endif %}>Electrical Engineering</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Study Year</label>
+                    <select name="study_year" required>
+                        <option value="FE" {% if current_user.study_year == 'FE' %}selected{% endif %}>First Year (FE)</option>
+                        <option value="SE" {% if current_user.study_year == 'SE' %}selected{% endif %}>Second Year (SE)</option>
+                        <option value="TE" {% if current_user.study_year == 'TE' %}selected{% endif %}>Third Year (TE)</option>
+                        <option value="BE" {% if current_user.study_year == 'BE' %}selected{% endif %}>Final Year (BE)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Academic Year</label>
+                    <select name="academic_year" id="academic_year_select" required>
+                        <option value="" disabled {% if not current_user.academic_year %}selected{% endif %}>Select Year...</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Division / Class</label>
+                    <select name="division" required>
+                        <option value="" disabled {% if not current_user.division %}selected{% endif %}>Select Division...</option>
+                        <option value="A" {% if current_user.division == 'A' %}selected{% endif %}>A</option>
+                        <option value="B" {% if current_user.division == 'B' %}selected{% endif %}>B</option>
+                        <option value="C" {% if current_user.division == 'C' %}selected{% endif %}>C</option>
+                    </select>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="fas fa-file-alt"></i> General Documents
+            </h4>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Upload Resume (PDF Only)</label>
+                <input type="file" name="resume" accept=".pdf" class="file-input">
+                {% if current_user.resume_link %}
+                    <small style="color: #4ade80 !important; display: block; margin-top: 8px; font-weight: 500;">
+                        <i class="fas fa-check-circle"></i> Current: 
+                        <a href="{{ url_for('static', filename='uploads/' + current_user.resume_link) }}" target="_blank" style="color: #4ade80; text-decoration: underline;">View File</a>
+                    </small>
+                {% endif %}
+            </div>
+
+            <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="fas fa-laptop-code"></i> Skills & General Experience
+            </h4>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Technical Skills</label>
+                <input list="tech-skills" name="skills" value="{{ current_user.skills }}" 
+                       placeholder="Start typing to see options..." required autocomplete="off">
+                
+                <datalist id="tech-skills">
+                    <option value="Python, Django, SQL">
+                    <option value="Java, Spring Boot, MySQL">
+                    <option value="MERN Stack (MongoDB, Express, React, Node)">
+                    <option value="Data Science (Python, Pandas, ML)">
+                    <option value="Cloud Computing (AWS, Docker, Kubernetes)">
+                    <option value="C++, Data Structures, Algorithms">
+                </datalist>
+                <small style="display: block; margin-top: 6px;">Separate multiple skills with commas.</small>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">General Project Experience</label>
+                <textarea name="experience" rows="5" placeholder="• Built a Chatbot using Python...&#10;• Developed a weather app using React...">{{ current_user.experience }}</textarea>
+            </div>
+
+            <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase;">
+                <i class="fas fa-briefcase"></i> Internship History
+            </h4>
+            
+            <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 1rem;">
+                Add your past internships. <strong>Note: A certificate PDF is strictly required for every internship you claim.</strong>
+            </p>
+
+            <div id="internships-wrapper"></div>
+            
+            <button type="button" onclick="addInternshipBlock()" class="btn-outline" style="width: 100%; border-style: dashed; padding: 15px; text-align: center; color: #cbd5e1; border-color: #475569;">
+                <i class="fas fa-plus-circle"></i> Add Internship
+            </button>
+            
+            <input type="hidden" name="intern_count" id="intern_count" value="0">
+
+            <h4 style="margin-top: 2.5rem; margin-bottom: 1.5rem; color: #6366f1 !important; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                <i class="fas fa-share-alt"></i> Social Presence
+            </h4>
+            
+            <div class="form-grid">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;"><i class="fab fa-github"></i> GitHub URL</label>
+                    <input type="url" name="github" value="{{ current_user.github }}" 
+                           placeholder="https://github.com/username">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;"><i class="fab fa-linkedin"></i> LinkedIn URL</label>
+                    <input type="url" name="linkedin" value="{{ current_user.linkedin }}" 
+                           placeholder="https://linkedin.com/in/username">
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; border-top: 1px solid #334155; padding-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                <a href="{{ url_for('main.student_dash') }}" class="btn-outline">
+                    <i class="fas fa-times" style="margin-right: 8px;"></i> Cancel
+                </a>
+                
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save" style="margin-right: 8px;"></i> Save Profile
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // --- 1. Custom Education Dropdown Toggle ---
+    function toggleCustomField(selectObj, customInputId) {
+        const customInput = document.getElementById(customInputId);
+        const originalName = selectObj.getAttribute('data-name');
+        
+        if (selectObj.value === 'Other') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+            customInput.name = originalName; 
+            selectObj.removeAttribute('name'); 
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            customInput.removeAttribute('name');
+            selectObj.name = originalName;
+        }
+    }
+
+    // --- 2. Dynamic Internships Logic ---
+    const existingInternships = {{ current_user.internships | default([]) | tojson }};
+    const wrapper = document.getElementById('internships-wrapper');
+    const countInput = document.getElementById('intern_count');
+    let internIndex = 0;
+
+    function addInternshipBlock(internData = null) {
+        const comp = internData ? internData.company : '';
+        const role = internData ? internData.role : '';
+        const start = internData ? internData.start_date : '';
+        const end = internData ? internData.end_date : '';
+        const oldCert = internData ? internData.certificate_link : '';
+        
+        // If no old cert exists, make the file input REQUIRED
+        const isRequired = oldCert ? '' : 'required';
+
+        const html = `
+            <div id="intern-block-${internIndex}" style="background: #0f172a; border: 1px solid #334155; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; position: relative;">
+                <button type="button" onclick="document.getElementById('intern-block-${internIndex}').remove()" style="position: absolute; top: 10px; right: 15px; background: none; border: none; color: #ef4444; font-size: 1.2rem; cursor: pointer;" title="Remove Internship">&times;</button>
+                
+                <div class="form-grid">
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Company Name <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="intern_company_${internIndex}" value="${comp}" placeholder="e.g. Google" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Role / Position <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="intern_role_${internIndex}" value="${role}" placeholder="e.g. SDE Intern" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Start Date <span style="color:#ef4444;">*</span></label>
+                        <input type="date" name="intern_start_${internIndex}" value="${start}" required>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">End Date <span style="color:#ef4444;">*</span></label>
+                        <input type="date" name="intern_end_${internIndex}" value="${end}" required>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">Upload Certificate (PDF) <span style="color:#ef4444;">*</span></label>
+                    <input type="file" name="intern_cert_${internIndex}" accept=".pdf" class="file-input" ${isRequired}>
+                    <input type="hidden" name="old_intern_cert_${internIndex}" value="${oldCert}">
+                    ${oldCert ? `<small style="color: #4ade80 !important; display: block; margin-top: 8px; font-weight: 500;"><i class="fas fa-check-circle"></i> Saved: <a href="/static/uploads/${oldCert}" target="_blank" style="color: #4ade80; text-decoration: underline;">View File</a> (Upload a new file to replace it)</small>` : ''}
+                </div>
+            </div>
+        `;
+        
+        wrapper.insertAdjacentHTML('beforeend', html);
+        internIndex++;
+        countInput.value = internIndex; // Keep track of total blocks for backend
+    }
+
+    // --- 3. Pre-load Data & Dynamic Current Year on Page Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // Dynamic Academic Year Generator (Up to Current Year)
+        const acadYearSelect = document.getElementById('academic_year_select');
+        const savedAcadYear = "{{ current_user.academic_year }}";
+        const currentYear = new Date().getFullYear();
+        
+        for (let y = 2010; y <= currentYear; y++) {
+            let yearStr = y + "-" + (y + 1);
+            let opt = document.createElement("option");
+            opt.value = yearStr;
+            opt.text = yearStr;
+            if (savedAcadYear === yearStr) {
+                opt.selected = true;
+            }
+            acadYearSelect.add(opt);
+        }
+
+        // Pre-fill education dropdown if needed
+        const eduSelect = document.querySelector('select[data-name="education"]');
+        const customEdu = document.getElementById('custom_edu');
+        const currentEdu = "{{ current_user.education }}";
+        
+        if (currentEdu) {
+            let optionExists = Array.from(eduSelect.options).some(opt => opt.value === currentEdu);
+            if (optionExists) {
+                eduSelect.value = currentEdu;
+            } else {
+                eduSelect.value = "Other";
+                toggleCustomField(eduSelect, 'custom_edu');
+                customEdu.value = currentEdu;
+            }
+        }
+
+        // Pre-load existing internships
+        if (existingInternships && existingInternships.length > 0) {
+            existingInternships.forEach(intern => addInternshipBlock(intern));
+        }
+    });
+</script>
+{% endblock %}

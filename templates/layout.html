@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}InternTrack{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="{{ 'logged-in' if current_user.is_authenticated else 'logged-out' }}">
+
+    {% if current_user.is_authenticated %}
+    <nav class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <div class="logo-text">
+                Intern<span class="highlight">Track</span>
+            </div>
+        </div>
+        
+        <ul class="nav-links">
+            {% if current_user.role == 'student' %}
+                <li><a href="{{ url_for('main.student_dash') }}"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('main.my_applications') }}"><i class="fas fa-file-alt"></i> Applications</a></li>
+                <li><a href="{{ url_for('main.notifications') }}"><i class="fas fa-bell"></i> Notifications</a></li>
+                <li><a href="{{ url_for('main.edit_profile') }}"><i class="fas fa-user-cog"></i> Profile</a></li>
+            
+            {% elif current_user.role == 'admin' %}
+                <li><a href="{{ url_for('main.admin_dash') }}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('main.create_job') }}"><i class="fas fa-plus-circle"></i> Post Job</a></li>
+            
+            {% elif current_user.role == 'faculty' %}
+                <li>
+                    <a href="{{ url_for('main.faculty_dash') }}">
+                        <i class="fas fa-chart-pie"></i> Placement Tracker
+                    </a>
+                </li>
+            {% endif %}
+            
+            <li style="margin-top: auto;">
+                <a href="{{ url_for('main.logout') }}" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </li>
+        </ul>
+        
+        <div class="user-profile">
+            <div class="avatar">{{ current_user.name[0] | upper }}</div>
+            <div style="text-align: left;">
+                <p style="font-weight: 600; font-size: 0.9rem; margin: 0; color: white;">{{ current_user.name.split()[0] }}</p>
+                <span style="font-size: 0.75rem; color: #94a3b8; text-transform: capitalize;">{{ current_user.role }}</span>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                {% for category, message in messages %}
+                    <div class="alert-box {{ category }}" style="padding: 15px; border-radius: 8px; margin-bottom: 10px; background: {{ 'rgba(16, 185, 129, 0.1)' if category == 'success' else 'rgba(239, 68, 68, 0.1)' }}; color: {{ '#34d399' if category == 'success' else '#f87171' }}; border: 1px solid {{ 'rgba(16, 185, 129, 0.2)' if category == 'success' else 'rgba(239, 68, 68, 0.2)' }};">
+                        <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-circle' }}"></i> {{ message }}
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+        {% block auth_content %}{% endblock %}
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    {% if current_user.is_authenticated %}
+    <script>
+        // Connect to the WebSocket server
+        const socket = io();
+        const myUserId = "{{ current_user.id }}";
+
+        // Listen for the 'new_notification' broadcast
+        socket.on('new_notification', function(data) {
+            // Check if the notification is meant for this specific user
+            if (data.target_user_id === myUserId) {
+                showRealTimeToast(data.notification);
+            }
+        });
+
+        // Function to create and show a beautiful sliding Toast alert
+        function showRealTimeToast(note) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            
+            const toast = document.createElement('div');
+            // Determine icon and color based on type
+            let icon = 'fa-bell';
+            let color = '#6366f1';
+            if (note.type === 'success') { icon = 'fa-trophy'; color = '#10b981'; }
+            if (note.type === 'warning') { icon = 'fa-video'; color = '#fbbf24'; }
+            if (note.type === 'danger') { icon = 'fa-times-circle'; color = '#ef4444'; }
+
+            toast.style.cssText = `
+                background: #1e293b; border: 1px solid #334155; border-left: 4px solid ${color};
+                padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                margin-top: 15px; display: flex; align-items: flex-start; gap: 15px;
+                transform: translateX(100%); opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                min-width: 300px; max-width: 400px;
+            `;
+
+            toast.innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); color: ${color}; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div>
+                    <h4 style="color: #f8fafc; margin: 0 0 5px 0; font-size: 1rem;">${note.title}</h4>
+                    <p style="color: #94a3b8; margin: 0; font-size: 0.85rem; line-height: 1.4;">${note.text}</p>
+                    <a href="{{ url_for('main.notifications') }}" style="color: ${color}; font-size: 0.8rem; font-weight: 600; text-decoration: none; margin-top: 8px; display: inline-block;">View Dashboard →</a>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => { toast.style.transform = 'translateX(0)'; toast.style.opacity = '1'; }, 10);
+
+            // Auto remove after 6 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)'; toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 400);
+            }, 6000);
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column;';
+            document.body.appendChild(container);
+            return container;
+        }
+    </script>
+    {% endif %}
+</body>
+</html>

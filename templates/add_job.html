@@ -1,0 +1,237 @@
+{% extends "layout.html" %}
+{% block title %}Post New Opportunity{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Text & Headers */
+    h2 { color: #f8fafc !important; }
+    p, small { color: #94a3b8 !important; }
+    label { 
+        display: block; 
+        margin-bottom: 8px; 
+        font-weight: 600; 
+        color: #cbd5e1; 
+        font-size: 0.9rem;
+    }
+
+    /* Card Styling */
+    .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        padding: 2.5rem !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        border-radius: 16px;
+    }
+
+    /* Input Fields */
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #f8fafc !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+        width: 100%;
+        transition: all 0.2s;
+        font-family: 'Inter', sans-serif;
+        box-sizing: border-box;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+        outline: none;
+    }
+
+    /* Custom Input Group for Salary */
+    .input-group-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .input-group-row input { flex: 2; margin: 0; }
+    .input-group-row select { flex: 1; margin: 0; }
+
+    /* Grid System */
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        align-items: start; 
+    }
+    @media (max-width: 768px) {
+        .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%) !important;
+        color: white !important;
+        border: none !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        width: fit-content;
+    }
+    
+    .btn-outline {
+        background: transparent !important;
+        border: 1px solid #475569 !important;
+        color: #cbd5e1 !important;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        text-decoration: none !important;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        width: fit-content; /* CRITICAL FIX: Stops the button from stretching */
+        white-space: nowrap; /* CRITICAL FIX: Keeps text on one line */
+    }
+    .btn-outline:hover {
+        border-color: #6366f1 !important;
+        color: #6366f1 !important;
+    }
+
+    /* Smooth transition for hidden inputs */
+    .custom-input {
+        display: none; 
+        margin-top: 8px;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; border-bottom: 1px solid #334155; padding-bottom: 1.5rem;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 800; margin: 0;">Create Job Posting</h2>
+                <p style="margin-top: 5px;">Fill in the details below to attract top talent.</p>
+            </div>
+            <a href="{{ url_for('main.admin_dash') }}" class="btn-outline">
+                <i class="fas fa-arrow-left"></i> Cancel
+            </a>
+        </div>
+        
+        <form method="POST">
+            <div class="grid-2">
+                <div>
+                    <label>Job Title <span style="color: #ef4444;">*</span></label>
+                    <select data-name="title" name="title" onchange="toggleCustomField(this, 'custom_title')" required>
+                        <option value="" disabled selected>Select a standard role...</option>
+                        <option value="Software Development Engineer (SDE)">Software Development Engineer (SDE)</option>
+                        <option value="Data Analyst Intern">Data Analyst Intern</option>
+                        <option value="Full Stack Web Developer">Full Stack Web Developer</option>
+                        <option value="Machine Learning Intern">Machine Learning Intern</option>
+                        <option value="Cybersecurity Analyst">Cybersecurity Analyst</option>
+                        <option value="Cloud Engineer Trainee">Cloud Engineer Trainee</option>
+                        <option value="Other">Other (Type custom title)</option>
+                    </select>
+                    <input type="text" id="custom_title" class="custom-input" placeholder="e.g. Senior Data Scientist">
+                </div>
+                <div>
+                    <label>Company Name <span style="color: #ef4444;">*</span></label>
+                    <select data-name="company" name="company" onchange="toggleCustomField(this, 'custom_company')" required>
+                        <option value="" disabled selected>Select hiring company...</option>
+                        <option value="TCS">TCS</option>
+                        <option value="Infosys">Infosys</option>
+                        <option value="Amazon">Amazon</option>
+                        <option value="Google">Google</option>
+                        <option value="L&T Infotech">L&T Infotech</option>
+                        <option value="Capgemini">Capgemini</option>
+                        <option value="Jio">Jio</option>
+                        <option value="Other">Other (Type company name)</option>
+                    </select>
+                    <input type="text" id="custom_company" class="custom-input" placeholder="Enter custom company name...">
+                </div>
+            </div>
+
+            <div class="grid-2" style="margin-top: 1.5rem;">
+                <div>
+                    <label>Salary / Stipend <span style="color: #ef4444;">*</span></label>
+                    <div class="input-group-row">
+                        <input type="number" name="salary_amount" placeholder="e.g. 12" step="0.1" required>
+                        <select name="salary_period" required>
+                            <option value="LPA">LPA (Yearly)</option>
+                            <option value="/month">Per Month</option>
+                            <option value="Fixed">One-time (Fixed)</option>
+                        </select>
+                    </div>
+                    <small style="display: block; margin-top: 6px;">Enter number, then select frequency.</small>
+                </div>
+
+                <div>
+                    <label>Job Type</label>
+                    <select name="job_type">
+                        <option value="Full Time">Full Time</option>
+                        <option value="Internship">Internship</option>
+                        <option value="Contract">Contract</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <label>Required Skills (AI Matching) <span style="color: #ef4444;">*</span></label>
+                <input list="tech-skills" name="skills" placeholder="Select or type custom skill (comma separated)..." required autocomplete="off">
+                
+                <datalist id="tech-skills">
+                    <option value="Python, Django, Flask, SQL">
+                    <option value="Java, Spring Boot, Hibernate, MySQL">
+                    <option value="MERN Stack (MongoDB, Express, React, Node)">
+                    <option value="Data Science (Python, Pandas, Scikit-learn, SQL)">
+                    <option value="C++, STL, Data Structures, Algorithms">
+                    <option value="Cloud (AWS, Docker, Kubernetes, Terraform)">
+                </datalist>
+                <small style="display: flex; align-items: center; gap: 6px; margin-top: 8px; color: #6366f1 !important;">
+                    <i class="fas fa-info-circle"></i> Use keywords from the list or type your own to rank students automatically.
+                </small>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <label>Job Description</label>
+                <textarea name="description" rows="6" placeholder="Describe the role, responsibilities, and perks..." required></textarea>
+            </div>
+
+            <div style="margin-top: 2.5rem; display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid #334155; padding-top: 1.5rem;">
+                <button type="reset" class="btn-outline">Reset Form</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-paper-plane"></i> Publish Opportunity
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+    /**
+     * Universal Toggle: Swaps 'name' attribute between Select and Input
+     * to keep the Backend (app.py/routes.py) unchanged.
+     */
+    function toggleCustomField(selectObj, customInputId) {
+        const customInput = document.getElementById(customInputId);
+        const originalName = selectObj.getAttribute('data-name');
+        
+        if (selectObj.value === 'Other') {
+            customInput.style.display = 'block';
+            customInput.required = true;
+            customInput.name = originalName; 
+            selectObj.removeAttribute('name'); 
+        } else {
+            customInput.style.display = 'none';
+            customInput.required = false;
+            customInput.removeAttribute('name');
+            selectObj.name = originalName;
+            // Clear the custom input value so it doesn't accidentally submit
+            customInput.value = "";
+        }
+    }
+</script>
+{% endblock %}

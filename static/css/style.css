@@ -1,0 +1,495 @@
+:root {
+    /* DARK MODE PALETTE (Professional Tech Theme) */
+    --bg-body: #0f172a;       /* Deep Navy/Black */
+    --bg-card: #1e293b;       /* Slate 800 (Cards) */
+    --bg-sidebar: #020617;    /* Darker Sidebar */
+    
+    --primary: #6366f1;       /* Indigo 500 (Glows on dark) */
+    --primary-dark: #4338ca;  /* Indigo 700 */
+    --primary-light: rgba(99, 102, 241, 0.2); 
+    
+    --secondary: #a855f7;     /* Purple 500 */
+    
+    --text-main: #f8fafc;     /* White/Slate 50 */
+    --text-muted: #94a3b8;    /* Slate 400 */
+    
+    --border: #334155;        /* Slate 700 */
+    --input-bg: #0f172a;      /* Dark Input Background */
+    
+    /* Status Colors (Adjusted for Dark Mode) */
+    --success: #10b981;       /* Emerald */
+    --warning: #f59e0b;       /* Amber */
+    --danger: #ef4444;        /* Red */
+    
+    --sidebar-width: 260px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.15); /* Subtle Blue Glow */
+}
+
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --secondary: #0ea5e9;
+    --accent: #a78bfa;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --btn-height: 42px; /* Fixed height for all buttons */
+    --admin-primary: #6366f1;
+    --admin-success: #10b981;
+    --admin-warning: #fbbf24;
+    --admin-danger: #ef4444;
+    --admin-border: #334155;
+    --admin-card-bg: #1e293b;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+/* Stats Grid: 4 Equal Columns with breathing room */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; }
+
+/* --- SIDEBAR --- */
+.sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    padding: 1.5rem;
+    display: flex; flex-direction: column;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 2.5rem;
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: -0.5px;
+}
+.logo span { color: var(--primary); }
+
+.nav-links { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+
+.nav-links a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-links a:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+
+.nav-links a.active {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    box-shadow: var(--shadow-glow);
+}
+
+/* User Profile */
+.user-profile {
+    display: flex; align-items: center; gap: 12px;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+.avatar {
+    width: 40px; height: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+}
+
+/* --- LAYOUT LOGIC --- */
+body.logged-in .content {
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+    padding: 2.5rem;
+}
+
+body.logged-out .content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+}
+
+/* --- CARDS --- */
+.card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+h1, h2, h3, h4 { color: var(--text-main); }
+p { color: var(--text-muted); }
+
+/* --- STAT CARDS --- */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+.grid-3-1 {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 2.5rem !important; /* More space between the job list and sidebar */
+}
+.grid-2 {
+    gap: 2rem !important;
+    margin-bottom: 3rem !important;
+}
+
+#section-recommend, #section-applications {
+    padding: 0.5rem; /* Prevents the header from feeling squeezed */
+}
+
+/* Add margin between the Section Header and the Job List Card */
+#section-recommend h3, #section-applications h3 {
+    margin-bottom: 2rem !important;
+}
+
+/* Standardize the Back to Feed button container */
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+/* Fix the button width so it's not full-width when aligned right */
+.section-header-row .btn-outline {
+    width: auto !important; 
+    min-width: 140px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--admin-border);
+}
+
+/* Stats Grid: 4 Equal Columns with breathing room */
+.admin-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+/* Professional Stat Card */
+.stat-card {
+    background: var(--admin-card-bg);
+    border: 1px solid var(--admin-border);
+    padding: 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stat-card:hover {
+    border-color: var(--admin-primary);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.stat-card.active-card {
+    border: 2px solid var(--admin-primary);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+/* Charts & Tables Grid */
+.admin-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.stat-icon {
+    width: 54px; height: 54px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; flex-shrink: 0;
+    background: rgba(255,255,255,0.03); /* Dark glass effect */
+}
+.stat-value { font-size: 1.75rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+
+/* --- BUTTONS --- */
+.btn-primary, .btn-outline, .btn-secondary {
+    height: var(--btn-height);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    white-space: nowrap;
+    width: 100%; /* Default to full width for mobile-first stack */
+}
+
+/* Primary Button (Campus Apply) */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%) !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Secondary Button (External Apply) */
+.btn-secondary {
+    background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%) !important;
+    color: white !important;
+}
+
+/* Outline Button (Analyze/View) */
+.btn-outline {
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+}
+
+.btn-outline:hover {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    background: rgba(99, 102, 241, 0.05) !important;
+}
+
+/* --- TABLES --- */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 1rem; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+td { padding: 1rem; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 0.95rem; }
+
+/* --- INPUTS --- */
+input, select, textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+}
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* --- BADGES --- */
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+.badge-green { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-blue { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 3rem;
+    padding: 0 10px;
+    cursor: default; /* It's a brand, not a link */
+}
+
+/* The Icon Container: Glassy Gradient Box */
+.logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); /* Indigo to Purple */
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    
+    /* Advanced Glow Effect */
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5), 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
+}
+
+/* Hover Animation: Rocket flies up slightly */
+.logo:hover .logo-icon {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(168, 85, 247, 0.6);
+}
+
+.logo:hover .logo-icon i {
+    animation: rocket-shake 0.5s ease-in-out infinite alternate;
+}
+
+/* Typography */
+.logo-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f8fafc; /* White text */
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+/* "Track" Gradient Text */
+.logo-text .highlight {
+    background: linear-gradient(90deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; /* Makes text take the gradient color */
+    font-weight: 800;
+}
+
+/* Subtle Rocket Animation on Hover */
+@keyframes rocket-shake {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(10deg); }
+}
+
+.job-card {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Stacked buttons for clean alignment */
+    gap: 8px;
+    min-width: 160px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end; /* Aligns buttons to the right */
+    align-items: center;
+    gap: 12px; /* Consistent spacing between buttons */
+    margin-top: 3rem;
+    border-top: 1px solid #334155;
+    padding-top: 1.5rem;
+}
+
+/* Fix for button sizing */
+.form-actions .btn-primary, 
+.form-actions .btn-outline {
+    height: 42px; /* Fixed height for perfect alignment */
+    min-width: 140px; /* Ensures buttons have a professional width */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0; /* Remove default margins that cause misalignment */
+}
+
+.table-container {
+    background: var(--admin-card-bg);
+    border: 1px solid var(--admin-border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.table-header {
+    padding: 1.25rem 1.5rem;
+    background: #0f172a;
+    border-bottom: 1px solid var(--admin-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Standardized Buttons for Admin */
+.admin-btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+/* --- High-End Table Styling --- */
+.admin-table-wrapper {
+    margin-bottom: 3rem; /* Creates the gap between the two sections */
+}
+
+.admin-card-header {
+    padding: 1.5rem;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.modern-table thead th {
+    background: #0f172a;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 2px solid #334155;
+    position: sticky;
+    top: 0;
+}
+
+.modern-table tbody td {
+    padding: 1.25rem 1.5rem;
+    background: #1e293b;
+    border-bottom: 1px solid #334155;
+    vertical-align: middle;
+}
+
+.modern-table tbody tr:hover td {
+    background: #253346 !important;
+}
+
+/* --- Status Badges --- */
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pill-green { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+.pill-yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+.pill-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+.pill-blue { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.2); }

@@ -1,0 +1,475 @@
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Text Overrides */
+    h1, h2, h3, h4 { color: #f8fafc !important; }
+    p, label, .stat-label { color: #94a3b8 !important; }
+
+    /* Cards */
+    .stat-card, .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .stat-card:hover { 
+        border-color: #6366f1 !important; 
+        transform: translateY(-4px); 
+        cursor: pointer;
+    }
+    .stat-value { color: #f8fafc !important; }
+    .stat-icon { background: rgba(255, 255, 255, 0.05) !important; }
+    
+    /* Active Card State */
+    .active-card {
+        border: 2px solid #6366f1 !important;
+        background: #253346 !important;
+    }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #0f172a !important; border-bottom: 2px solid #334155 !important; }
+    th { padding: 16px !important; color: #94a3b8 !important; text-align: left; }
+    td { padding: 16px !important; color: #e2e8f0 !important; border-bottom: 1px solid #334155 !important; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Inputs */
+    #studentSearch {
+        background: #0f172a; border: 1px solid #334155; color: white;
+        padding: 6px 12px; border-radius: 6px; width: 180px;
+    }
+    #studentSearch:focus { outline: none; border-color: #6366f1; }
+
+    /* MODAL (Hidden by Default) */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: none; /* CRITICAL: Must be none */
+        justify-content: center; align-items: center;
+        z-index: 1000;
+        opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+
+    .modal-card {
+        background: #1e293b; border: 1px solid #334155;
+        width: 90%; max-width: 600px; border-radius: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        transform: scale(0.95); transition: transform 0.2s ease;
+    }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+
+    .modal-header {
+        padding: 1.5rem; background: #0f172a; border-bottom: 1px solid #334155;
+        display: flex; align-items: center; gap: 1.5rem;
+    }
+
+    .detail-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 5px; }
+    .detail-val { font-weight: 600; color: #f8fafc; font-size: 1rem; }
+    
+    .job-skill-tag { 
+        background: #0f172a !important; color: #cbd5e1 !important; 
+        border: 1px solid #334155 !important; padding: 6px 12px; 
+        border-radius: 6px; font-size: 0.85rem; font-weight: 600; 
+    }
+    
+    .close-btn {
+        background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;
+    }
+    .close-btn:hover { color: white; }
+</style>
+
+<div class="admin-header">
+    <div>
+        <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0; letter-spacing: -1px; color: white;">Admin Console</h1>
+        <p style="margin-top: 5px; color: #94a3b8;">System Health: <span style="color: #4ade80;">● Online</span></p>
+    </div>
+    
+    <div style="display: flex; gap: 12px;">
+        <a href="{{ url_for('main.run_data_pipeline') }}" class="btn-outline" style="border-color: #38bdf8; color: #38bdf8; width: auto;">
+            <i class="fas fa-sync-alt"></i> &nbsp; Sync External APIs
+        </a>
+        <a href="{{ url_for('main.create_job') }}" class="btn-primary" style="width: auto;">
+            <i class="fas fa-plus"></i> &nbsp; Post Campus Job
+        </a>
+    </div>
+</div>
+
+<div class="admin-stats-grid">
+    <div class="stat-card active-card" onclick="filterStudents('all', this)">
+        <div class="stat-icon" style="color: #38bdf8 !important; background: transparent !important; font-size: 1.5rem;">
+            <i class="fas fa-users"></i>
+        </div>
+        <div>
+            <div class="stat-value" style="font-size: 1.5rem; font-weight: 800;">{{ students|length }}</div>
+            <div class="stat-label" style="text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">Total Students</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="highlightJobs(this)">
+        <div class="stat-icon" style="color: #fbbf24 !important; background: transparent !important; font-size: 1.5rem;">
+            <i class="fas fa-briefcase"></i>
+        </div>
+        <div>
+            <div class="stat-value" style="font-size: 1.5rem; font-weight: 800;">{{ jobs|length }}</div>
+            <div class="stat-label" style="text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">Active Jobs</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterStudents('Placed', this)">
+        <div class="stat-icon" style="color: #4ade80 !important; background: transparent !important; font-size: 1.5rem;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div>
+            <div class="stat-value" id="val-placed" style="font-size: 1.5rem; font-weight: 800;">0</div>
+            <div class="stat-label" style="text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">Placed Students</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterStudents('Interviewing', this)">
+        <div class="stat-icon" style="color: #a78bfa !important; background: transparent !important; font-size: 1.5rem;">
+            <i class="fas fa-user-clock"></i>
+        </div>
+        <div>
+            <div class="stat-value" id="val-interview" style="font-size: 1.5rem; font-weight: 800;">0</div>
+            <div class="stat-label" style="text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">Interviewing</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card" style="padding: 1.5rem !important;">
+        <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; font-size: 1.1rem;">
+            <i class="fas fa-chart-bar" style="color: #6366f1;"></i> Skill Demand vs Supply
+        </h3>
+        <div style="height: 280px;">
+            <canvas id="marketChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1.5rem !important;">
+        <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; font-size: 1.1rem;">
+            <i class="fas fa-chart-pie" style="color: #10b981;"></i> Placement Success
+        </h3>
+        <div style="height: 280px;">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-wrapper">
+    <div class="card" style="padding: 0 !important; overflow: hidden;">
+        <div class="admin-card-header">
+            <h3 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-briefcase" style="color: #fbbf24;"></i> Active Job Listings
+            </h3>
+            <span style="color: #64748b; font-size: 0.9rem;">{{ jobs|length }} Total Positions</span>
+        </div>
+        <div style="max-height: 500px; overflow-y: auto;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Role & Company</th>
+                        <th>Engagement</th>
+                        <th>Type</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 700; color: #f8fafc; font-size: 1rem;">{{ job.title }}</div>
+                            <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">{{ job.company }}</div>
+                        </td>
+                        <td>
+                            <span class="status-pill pill-blue">
+                                <i class="fas fa-user-friends"></i> {{ job.app_count }} Applicants
+                            </span>
+                        </td>
+                        <td>
+                            {% if job.source == 'External' %}
+                                <span class="status-pill pill-yellow" style="color: #38bdf8; border-color: #38bdf8; background: transparent;">WEB API</span>
+                            {% else %}
+                                <span class="status-pill" style="color: #94a3b8; border: 1px solid #334155;">CAMPUS</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <a href="{{ url_for('main.manage_job_applicants', job_id=job._id) }}" class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #475569;" title="Manage Applicants">
+                                    <i class="fas fa-users-cog"></i>
+                                </a>
+                                <a href="{{ url_for('main.delete_job', job_id=job._id) }}" class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #ef4444; color: #ef4444;" onclick="return confirm('Delete this job?');">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="admin-table-wrapper">
+    <div class="card" style="padding: 0 !important; overflow: hidden;">
+        <div class="admin-card-header">
+            <h3 id="studentTableTitle" style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-graduate" style="color: #6366f1;"></i> Student Roster
+            </h3>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <i class="fas fa-search" style="color: #475569;"></i>
+                <input type="text" id="studentSearch" onkeyup="searchStudents()" placeholder="Search by name, skill, or status..." style="width: 250px; background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 15px; border-radius: 8px;">
+            </div>
+        </div>
+        
+        <div style="max-height: 600px; overflow-y: auto;">
+            <table id="adminStudentTable" class="modern-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Student Identity</th>
+                        <th>Placement Status</th>
+                        <th>Verification</th>
+                        <th style="text-align: right;">Quick Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr data-status="{{ student.placement_status }}">
+                        <td>
+                            <div style="font-weight: 700; color: #f8fafc; font-size: 1rem;">{{ student.name }}</div>
+                            <div style="font-size: 0.85rem; color: #64748b;">{{ student.email }}</div>
+                        </td>
+                        <td>
+                            {% if student.placement_status == 'Placed' %}
+                                <span class="status-pill pill-green">PLACED</span>
+                            {% elif student.placement_status == 'Interviewing' %}
+                                <span class="status-pill pill-yellow">INTERVIEWING</span>
+                            {% else %}
+                                <span class="status-pill" style="color: #94a3b8; border: 1px solid #334155;">OPEN</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if student.verification_status == 'Admin Verified' %}
+                                <span class="status-pill pill-green" style="font-size: 0.65rem;"><i class="fas fa-check-double"></i> Verified</span>
+                            {% elif student.verification_status == 'Faculty Verified' %}
+                                <span class="status-pill pill-blue" style="font-size: 0.65rem;"><i class="fas fa-user-shield"></i> Faculty OK</span>
+                            {% elif student.verification_status == 'Rejected' %}
+                                <span class="status-pill pill-red" style="font-size: 0.65rem;"><i class="fas fa-ban"></i> Rejected</span>
+                            {% else %}
+                                <span class="status-pill pill-yellow" style="font-size: 0.65rem;"><i class="fas fa-clock"></i> Pending</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                {% if student.verification_status != 'Admin Verified' %}
+                                    <a href="{{ url_for('main.admin_verify_student', user_id=student._id) }}" class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #10b981; color: #10b981;" title="Approve Student"><i class="fas fa-check"></i></a>
+                                    {% if student.verification_status != 'Rejected' %}
+                                    <a href="{{ url_for('main.admin_reject_student', user_id=student._id) }}" class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #ef4444; color: #ef4444;" title="Reject Student"><i class="fas fa-times"></i></a>
+                                    {% endif %}
+                                {% endif %}
+                                <button onclick="openModal('{{ student.name }}', '{{ student.email }}', '{{ student.skills }}', '{{ student.placement_status }}', '{{ student.education }}', '{{ student.cgpa }}', '{{ student.resume_link }}')" 
+                                        class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #6366f1; color: #6366f1;" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{{ url_for('main.delete_student', user_id=student._id) }}" class="btn-outline" style="padding: 8px 12px; height: 36px; min-width: auto; border-color: #94a3b8; color: #94a3b8;" title="Delete" onclick="return confirm('Permanently delete student?');">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="studentModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div style="width: 50px; height: 50px; background: #6366f1; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700;">
+                <span id="modalInitials"></span>
+            </div>
+            <div style="flex: 1;">
+                <h2 id="modalName" style="margin: 0; font-size: 1.5rem;">Student Name</h2>
+                <a id="modalEmailLink" href="#" style="color: #94a3b8; font-size: 0.95rem; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                    <i class="far fa-envelope"></i> <span id="modalEmail">email</span>
+                </a>
+            </div>
+            <button onclick="closeModal()" class="close-btn">&times;</button>
+        </div>
+        
+        <div style="padding: 2rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                <div><label class="detail-label">EDUCATION</label><div id="modalEdu" class="detail-val">-</div></div>
+                <div><label class="detail-label">CGPA</label><div id="modalCGPA" class="detail-val">-</div></div>
+                <div><label class="detail-label">STATUS</label><span id="modalStatus" class="badge">Open</span></div>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label class="detail-label">SKILLS</label>
+                <div id="modalSkills" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+            <div style="display: flex; gap: 1rem; border-top: 1px solid #334155; padding-top: 1.5rem;">
+                <a id="modalResume" href="#" target="_blank" class="btn-primary" style="flex: 1; justify-content: center; text-decoration: none; display: none;">
+                    <i class="fas fa-file-pdf"></i> &nbsp; View Resume
+                </a>
+                <a id="emailActionBtn" href="#" class="btn-outline" style="flex: 1; justify-content: center; border-color: #475569; color: #cbd5e1;">
+                    <i class="fas fa-paper-plane"></i> &nbsp; Email Student
+                </a>
+            </div>
+            <p id="noResumeMsg" style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 15px; display: none;">
+                <i class="fas fa-exclamation-circle"></i> No resume uploaded.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Calculate Real-Time Stats
+        const rows = document.querySelectorAll('#adminStudentTable tbody tr');
+        let counts = { 'Placed': 0, 'Interviewing': 0, 'Open': 0 };
+
+        rows.forEach(row => {
+            let s = row.getAttribute('data-status');
+            if(s === 'Placed') counts['Placed']++;
+            else if(s === 'Interviewing') counts['Interviewing']++;
+            else counts['Open']++;
+        });
+
+        document.getElementById('val-placed').innerText = counts['Placed'];
+        document.getElementById('val-interview').innerText = counts['Interviewing'];
+
+        // CHART 1: Market Demand
+        const ctxMarket = document.getElementById('marketChart').getContext('2d');
+        new Chart(ctxMarket, {
+            type: 'bar',
+            data: {
+                labels: {{ labels | tojson }},
+                datasets: [
+                    { label: 'Market Demand', data: {{ data_demand | tojson }}, backgroundColor: '#6366f1', borderRadius: 4 },
+                    { label: 'Student Supply', data: {{ data_supply | tojson }}, backgroundColor: '#94a3b8', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
+                scales: { 
+                    y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } }, 
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+                }
+            }
+        });
+
+        // CHART 2: Placement Status
+        const ctxStatus = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ['Placed', 'Interviewing', 'Looking'],
+                datasets: [{
+                    data: [counts['Placed'], counts['Interviewing'], counts['Open']],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderColor: '#1e293b',
+                    borderWidth: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+            }
+        });
+    });
+
+    // --- HELPER FUNCTIONS ---
+    function setActiveCard(card) {
+        document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-card'));
+        if(card) card.classList.add('active-card');
+    }
+
+    // Function 1: Filter Students by Status
+    function filterStudents(status, card) {
+        setActiveCard(card);
+        const rows = document.querySelectorAll('#adminStudentTable tbody tr');
+        const title = document.getElementById('studentTableTitle');
+        
+        if(status === 'all') title.innerText = "Student Roster";
+        else title.innerText = status + " Students";
+
+        rows.forEach(row => {
+            const s = row.getAttribute('data-status');
+            if (status === 'all') row.style.display = '';
+            else row.style.display = (s === status) ? '' : 'none';
+        });
+    }
+
+    // Function 2: Highlight Jobs (No Scrolling)
+    function highlightJobs(card) { 
+        setActiveCard(card);
+        // Scrolling logic removed to prevent jumping
+    }
+
+    // Function 3: Search Students
+    function searchStudents() {
+        const input = document.getElementById("studentSearch").value.toUpperCase();
+        document.querySelectorAll('#adminStudentTable tbody tr').forEach(row => {
+            row.style.display = row.innerText.toUpperCase().indexOf(input) > -1 ? "" : "none";
+        });
+    }
+
+    // --- MODAL LOGIC ---
+    function openModal(name, email, skills, status, edu, cgpa, resume) {
+        document.getElementById('modalName').innerText = name;
+        document.getElementById('modalEmail').innerText = email;
+        document.getElementById('modalInitials').innerText = name.charAt(0);
+        document.getElementById('modalEmailLink').href = `mailto:${email}`;
+        document.getElementById('emailActionBtn').href = `mailto:${email}`;
+
+        document.getElementById('modalEdu').innerText = edu && edu !== 'None' ? edu : '-';
+        document.getElementById('modalCGPA').innerText = cgpa && cgpa !== 'None' ? cgpa : '-';
+        
+        const badge = document.getElementById('modalStatus');
+        badge.innerText = status;
+        badge.className = 'badge ' + (status === 'Placed' ? 'badge-green' : status === 'Interviewing' ? 'badge-yellow' : 'badge-gray');
+
+        const sDiv = document.getElementById('modalSkills');
+        sDiv.innerHTML = '';
+        if(skills && skills !== 'None') {
+            skills.split(',').forEach(k => {
+                if(k.trim()){
+                    let tag = document.createElement('span');
+                    tag.className = 'job-skill-tag'; tag.innerText = k.trim(); sDiv.appendChild(tag);
+                }
+            });
+        }
+        
+        const rBtn = document.getElementById('modalResume');
+        const rMsg = document.getElementById('noResumeMsg');
+        if(resume && resume !== 'None') {
+            rBtn.href = resume.startsWith('http') ? resume : `/static/uploads/${resume}`;
+            rBtn.style.display = 'inline-flex'; rMsg.style.display = 'none';
+        } else {
+            rBtn.style.display = 'none'; rMsg.style.display = 'block';
+        }
+        
+        // SHOW MODAL
+        document.getElementById('studentModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('studentModal').classList.remove('active');
+    }
+    
+    // Close on Click Outside
+    document.getElementById('studentModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+{% endblock %}

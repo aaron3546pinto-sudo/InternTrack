@@ -1,0 +1,612 @@
+{% extends "layout.html" %}
+{% block title %}Faculty Dashboard{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Text Overrides */
+    h1, h2, h3, strong { color: #f8fafc !important; }
+    p, label, .stat-label { color: #94a3b8 !important; }
+
+    /* Grids */
+    .grid-5 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Cards */
+    .stat-card, .card {
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+    }
+    .stat-card:hover { border-color: #6366f1 !important; transform: translateY(-4px); }
+    .stat-value { color: #f8fafc !important; }
+    .stat-icon { background: rgba(255, 255, 255, 0.05) !important; }
+
+    /* Alert Banner (Action Required) */
+    .alert-banner {
+        background: rgba(249, 115, 22, 0.15) !important;
+        border: 1px solid rgba(249, 115, 22, 0.3) !important;
+        display: flex; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 2rem; border-radius: 12px;
+    }
+    .alert-icon {
+        background: rgba(249, 115, 22, 0.2); color: #fb923c;
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Table Styling */
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #0f172a !important; border-bottom: 2px solid #334155 !important; }
+    th { padding: 16px !important; color: #94a3b8 !important; text-align: left; }
+    td { padding: 16px !important; color: #e2e8f0 !important; border-bottom: 1px solid #334155 !important; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Inputs */
+    #searchInput {
+        background: #0f172a; border: 1px solid #334155; color: white;
+        padding: 8px 12px; border-radius: 8px; width: 250px;
+    }
+    #searchInput:focus { outline: none; border-color: #6366f1; }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: none;
+        justify-content: center; align-items: center;
+        z-index: 1000;
+        opacity: 0; transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+
+    .modal-card {
+        background: #1e293b; border: 1px solid #334155;
+        width: 90%; max-width: 750px; 
+        border-radius: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        transform: scale(0.95); transition: transform 0.2s ease;
+    }
+    .modal-overlay.active .modal-card { transform: scale(1); }
+
+    .modal-header {
+        padding: 1.5rem; background: #0f172a; border-bottom: 1px solid #334155;
+        display: flex; align-items: center; gap: 1.5rem;
+        border-top-left-radius: 16px; border-top-right-radius: 16px;
+    }
+    
+    .close-btn {
+        background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;
+    }
+    .close-btn:hover { color: white; }
+    
+    .job-skill-tag {
+        background: #0f172a !important; color: #cbd5e1 !important; border: 1px solid #334155 !important;
+        padding: 4px 8px; border-radius: 6px; font-size: 0.8rem;
+    }
+
+    /* Custom Scrollbar for Modal content */
+    .scrollable-section::-webkit-scrollbar {
+        width: 6px;
+    }
+    .scrollable-section::-webkit-scrollbar-track {
+        background: #0f172a; 
+        border-radius: 4px;
+    }
+    .scrollable-section::-webkit-scrollbar-thumb {
+        background: #334155; 
+        border-radius: 4px;
+    }
+    .scrollable-section::-webkit-scrollbar-thumb:hover {
+        background: #475569; 
+    }
+</style>
+
+<div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">Faculty Overview</h1>
+    <p>Track student progress, verify accounts, and manage placements.</p>
+</div>
+
+<div class="grid-5">
+    <div class="stat-card" onclick="filterByStatus('all')">
+        <div class="stat-icon" style="color: #38bdf8 !important;"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-value">{{ total }}</div>
+            <div class="stat-label">Total Students</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterByStatus('Placed')">
+        <div class="stat-icon" style="color: #4ade80 !important;"><i class="fas fa-check-circle"></i></div>
+        <div>
+            <div class="stat-value">{{ placed }}</div>
+            <div class="stat-label">Placed</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterByStatus('Interviewing')">
+        <div class="stat-icon" style="color: #fbbf24 !important;"><i class="fas fa-user-clock"></i></div>
+        <div>
+            <div class="stat-value" id="count-interview">0</div>
+            <div class="stat-label">Interviewing</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterByStatus('Hold')">
+        <div class="stat-icon" style="color: #a78bfa !important;"><i class="fas fa-pause-circle"></i></div>
+        <div>
+            <div class="stat-value" id="count-hold">0</div>
+            <div class="stat-label">On Hold</div>
+        </div>
+    </div>
+
+    <div class="stat-card" onclick="filterByStatus('Open')">
+        <div class="stat-icon" style="color: #ef4444 !important;"><i class="fas fa-search"></i></div>
+        <div>
+            <div class="stat-value" id="count-open">0</div>
+            <div class="stat-label">Still Looking</div>
+        </div>
+    </div>
+</div>
+
+{% if pending_students %}
+<div class="alert-banner">
+    <div class="alert-icon">
+        <i class="fas fa-bell"></i>
+    </div>
+    <div>
+        <strong style="color: #fb923c !important;">Action Required</strong>
+        <p style="margin: 0; color: #fed7aa !important; font-size: 0.9rem;">{{ pending_students|length }} students are waiting for verification.</p>
+    </div>
+</div>
+{% endif %}
+
+<div style="background: #1e293b; padding: 1.5rem; border: 1px solid #334155; border-radius: 12px; margin-bottom: 1.5rem; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+    <strong style="color: #6366f1 !important; margin-right: 10px;"><i class="fas fa-filter"></i> Filter Roster:</strong>
+    
+    <select id="filterBranch" onchange="applyFilters()" style="background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 6px;">
+        <option value="ALL">All Branches</option>
+        <option value="CMPN">CMPN</option>
+        <option value="IT">IT</option>
+        <option value="EXTC">EXTC</option>
+        <option value="MECH">MECH</option>
+    </select>
+
+    <select id="filterYear" onchange="applyFilters()" style="background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 6px;">
+        <option value="ALL">All Study Years</option>
+        <option value="FE">FE</option>
+        <option value="SE">SE</option>
+        <option value="TE">TE</option>
+        <option value="BE">BE</option>
+    </select>
+    
+    <select id="filterAcadYear" onchange="applyFilters()" style="background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 6px;">
+        <option value="">All Academic Years</option>
+    </select>
+    
+    <select id="filterDiv" onchange="applyFilters()" style="background: #0f172a; border: 1px solid #334155; color: white; padding: 8px 12px; border-radius: 6px; width: 130px;">
+        <option value="">All Divisions</option>
+        <option value="A">Division A</option>
+        <option value="B">Division B</option>
+        <option value="C">Division C</option>
+    </select>
+</div>
+
+<div class="grid-3-1">
+    
+    <div class="card" style="padding: 0 !important; overflow: hidden;">
+        <div style="padding: 1.5rem; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="tableTitle" style="margin:0; font-size: 1.1rem;">All Students</h3>
+            <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search name or skills...">
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table id="studentTable">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 1.5rem;">Student Name</th>
+                        <th>Top Skills</th>
+                        <th>ML Prediction</th> <th>Status</th>
+                        <th style="text-align: right; padding-right: 1.5rem;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr data-status="{{ student.placement_status }}" 
+                        data-branch="{{ student.branch|default('') }}" 
+                        data-year="{{ student.study_year|default('') }}"
+                        data-acad="{{ student.academic_year|default('') }}"
+                        data-div="{{ student.division|default('') }}">
+                        
+                        <td style="display: none;" class="exp-data-store">{{ student.experience|default('No general experience provided.', true) }}</td>
+
+                        <td style="display: none;" class="intern-data-store">
+                            {% if student.internships %}
+                                <div class="scrollable-section" style="display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto; padding-right: 8px;">
+                                {% for intern in student.internships %}
+                                    <div style="background: rgba(255, 255, 255, 0.02); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid #10b981;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                            <strong style="color: #f8fafc; font-size: 1rem;">{{ intern.company }}</strong>
+                                            {% if intern.certificate_link %}
+                                            <a href="{{ url_for('static', filename='uploads/' + intern.certificate_link) }}" target="_blank" class="badge badge-green" style="text-decoration: none; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399;">
+                                                <i class="fas fa-award"></i> View Cert
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        <div style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 6px; font-weight: 500;">{{ intern.role }}</div>
+                                        <div style="color: #64748b; font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                                            <i class="far fa-calendar-alt"></i> {{ intern.start_date }} &rarr; {{ intern.end_date }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                </div>
+                            {% else %}
+                                <span style="color:#64748b;">No records provided</span>
+                            {% endif %}
+                        </td>
+
+                        <td style="padding-left: 1.5rem;">
+                            <div style="font-weight: 700; color: #f8fafc;">{{ student.name }}</div>
+                            <div style="font-size: 0.85rem; color: #94a3b8;">{{ student.email }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 800; font-size: 1rem; color: {% if student.placement_probability >= 80 %}#10b981{% elif student.placement_probability >= 50 %}#fbbf24{% else %}#ef4444{% endif %};">
+                                {{ student.placement_probability }}%
+                            </div>
+                            <div style="font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 600;">Win Rate</div>
+                        </td>
+                        <td style="max-width: 200px;">
+                            <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cbd5e1; font-size: 0.9rem;">
+                                {{ student.skills }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if student.placement_status == 'Placed' %}
+                                <span class="badge badge-green">Placed</span>
+                            {% elif student.placement_status == 'Interviewing' %}
+                                <span class="badge badge-yellow">Interviewing</span>
+                            {% elif student.placement_status == 'Hold' %}
+                                <span class="badge badge-purple">On Hold</span>
+                            {% elif student.placement_status == 'Rejected' %}
+                                <span class="badge badge-red">Rejected</span>
+                            {% else %}
+                                <span class="badge badge-gray">Open</span>
+                            {% endif %}
+                            
+                            {% if student.verification_status == 'Pending' %}
+                                <span class="badge badge-red" style="font-size: 0.65rem; margin-left: 5px;">Unverified</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right; padding-right: 1.5rem;">
+                             {% if student.verification_status == 'Pending' %}
+                                <a href="{{ url_for('main.faculty_verify_student', user_id=student._id) }}" class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;">
+                                    Verify
+                                </a>
+                            {% else %}
+                                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+                                    
+                                    {% if student.placement_status == 'Open' %}
+                                        {% if student.placement_probability < 40 %}
+                                            <span style="color: #ef4444; font-size: 0.75rem; font-weight: 700; margin-right: 5px;">
+                                                <i class="fas fa-exclamation-triangle"></i> AT-RISK
+                                            </span>
+                                            <a href="{{ url_for('main.nudge_student', user_id=student._id) }}" class="btn-outline" style="padding: 6px 10px; color: #ef4444; border-color: #ef4444;" title="Send AI Study Plan">
+                                                <i class="fas fa-life-ring"></i> Intervene
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ url_for('main.nudge_student', user_id=student._id) }}" class="btn-outline" style="padding: 6px 10px; color: #fbbf24; border-color: #fbbf24;" title="Send Reminder">
+                                                <i class="far fa-bell"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    <button onclick="openModal(
+                                        '{{ student.name }}', 
+                                        '{{ student.email }}', 
+                                        '{{ student.skills }}', 
+                                        '{{ student.placement_status }}',
+                                        '{{ student.branch|default('-') }} {{ student.study_year|default('-') }} ({{ student.division|default('-') }})',
+                                        '{{ student.cgpa }}',
+                                        '{{ student.resume_link }}',
+                                        this.closest('tr')
+                                    )" class="btn-outline" style="padding: 6px 12px; font-size: 0.8rem;">
+                                        View
+                                    </button>
+                                    <a href="{{ url_for('main.delete_student', user_id=student._id) }}" class="btn-outline" style="padding: 6px 10px; border-color: #ef4444; color: #ef4444;" title="Delete Student" onclick="return confirm('Are you sure? This will permanently delete the student and all their applications.');">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Class Analytics</h3>
+            <div style="height: 250px; position: relative;">
+                <canvas id="facultyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid #f59e0b !important;">
+            <h3 style="margin-bottom: 1rem; font-size: 1rem; color: #fbbf24 !important; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-briefcase"></i> Recent Interviews
+            </h3>
+            
+            {% if interview_list %}
+                <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+                    {% for item in interview_list %}
+                    <li style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.9rem; color: #f8fafc;">{{ item.name }}</div>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">{{ item.role }}</div>
+                        </div>
+                        <span class="badge badge-blue" style="font-size: 0.65rem;">{{ item.company }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div style="text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 1rem;">
+                    No active interviews happening right now.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="studentModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+                <span id="modalInitials"></span>
+            </div>
+            <div style="flex: 1;">
+                <h2 id="modalName" style="margin: 0; font-size: 1.5rem; color: #f8fafc;">Student Name</h2>
+                <a id="modalEmailLink" href="#" style="color: #94a3b8; font-size: 0.9rem; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                    <i class="far fa-envelope"></i> <span id="modalEmail">email@example.com</span>
+                </a>
+            </div>
+            <button onclick="closeModal()" class="close-btn">&times;</button>
+        </div>
+        
+        <div style="padding: 1.5rem;">
+            
+            <div style="display: flex; gap: 2rem; margin-bottom: 2rem; background: #0f172a; padding: 1.25rem; border-radius: 12px; border: 1px solid #334155; align-items: center;">
+                <div style="flex: 1;">
+                    <label style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Class Info</label>
+                    <div id="modalEdu" style="font-weight: 600; color: #f8fafc; font-size: 1rem; margin-top: 4px;">-</div>
+                </div>
+                <div style="flex: 1; border-left: 1px solid #334155; padding-left: 2rem;">
+                    <label style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">CGPA</label>
+                    <div id="modalCGPA" style="font-weight: 600; color: #f8fafc; font-size: 1rem; margin-top: 4px;">-</div>
+                </div>
+                <div style="flex: 1; border-left: 1px solid #334155; padding-left: 2rem;">
+                    <label style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Current Status</label>
+                    <div style="margin-top: 6px;"><span id="modalStatus" class="badge">Open</span></div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 10px; color: #94a3b8;">General Project Experience</label>
+                        <div id="modalExperience" class="scrollable-section" style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid #334155; max-height: 140px; overflow-y: auto;">-</div>
+                    </div>
+                    
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 10px; color: #94a3b8;">Technical Skills</label>
+                        <div id="modalSkills" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 10px; color: #94a3b8;">Internship History</label>
+                    <div id="modalInternDates">-</div>
+                </div>
+
+            </div>
+
+            <div style="display: flex; gap: 1rem; border-top: 1px solid #334155; padding-top: 1.5rem;">
+                <a id="modalResume" href="#" target="_blank" class="btn-primary" style="flex: 1; text-align: center; justify-content: center; text-decoration: none; display: none;">
+                    <i class="fas fa-file-pdf"></i> Resume
+                </a>
+                <a id="emailActionBtn" href="#" class="btn-outline" style="flex: 1; text-align: center; justify-content: center; border-color: #475569; color: #cbd5e1;">
+                    <i class="fas fa-paper-plane"></i> Email Student
+                </a>
+            </div>
+             <p id="noResumeMsg" style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 15px; display: none;">
+                 <i class="fas fa-exclamation-circle"></i> No resume uploaded.
+             </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- 0. Dynamic Academic Year Filter Generation ---
+        const filterAcadYearSelect = document.getElementById('filterAcadYear');
+        const currentYear = new Date().getFullYear();
+        
+        for (let y = 2010; y <= currentYear; y++) {
+            let yearStr = y + "-" + (y + 1);
+            let opt = document.createElement("option");
+            opt.value = yearStr;
+            opt.text = yearStr;
+            filterAcadYearSelect.add(opt);
+        }
+
+        // 1. Calculate Real-Time Stats
+        const rows = document.querySelectorAll('#studentTable tbody tr');
+        let counts = { 'Interviewing': 0, 'Hold': 0, 'Open': 0, 'Placed': 0 };
+
+        rows.forEach(row => {
+            let status = row.getAttribute('data-status');
+            if(status === 'Rejected') status = 'Open'; 
+            
+            if(counts[status] !== undefined) counts[status]++;
+            else if(status === 'Placed') counts['Placed']++;
+        });
+
+        document.getElementById('count-interview').innerText = counts['Interviewing'];
+        document.getElementById('count-hold').innerText = counts['Hold'];
+        document.getElementById('count-open').innerText = counts['Open'];
+
+        // 2. Render Chart (Dark Mode Colors)
+        const ctx = document.getElementById('facultyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Placed', 'Interviewing', 'On Hold', 'Looking'],
+                datasets: [{
+                    data: [counts['Placed'], counts['Interviewing'], counts['Hold'], counts['Open']],
+                    backgroundColor: ['#10b981', '#f59e0b', '#a78bfa', '#ef4444'],
+                    borderColor: '#1e293b',
+                    borderWidth: 4,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, color: '#94a3b8' } }
+                }
+            }
+        });
+    });
+
+    // --- FACULTY FILTER LOGIC ---
+    let currentStatusFilter = 'all';
+
+    function filterByStatus(status) {
+        currentStatusFilter = status;
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const branchVal = document.getElementById('filterBranch').value.toUpperCase();
+        const yearVal = document.getElementById('filterYear').value.toUpperCase();
+        const acadVal = document.getElementById('filterAcadYear').value.toUpperCase();
+        const divVal = document.getElementById('filterDiv').value.toUpperCase();
+        const searchInput = document.getElementById("searchInput").value.toUpperCase();
+        const rows = document.querySelectorAll('#studentTable tbody tr');
+        const title = document.getElementById('tableTitle');
+
+        // Update Title based on Status Filter
+        if (currentStatusFilter === 'all') title.innerText = "All Students";
+        else if (currentStatusFilter === 'Open') title.innerText = "Students Still Looking";
+        else title.innerText = currentStatusFilter + " Students";
+
+        rows.forEach(row => {
+            const status = row.getAttribute('data-status');
+            const branch = row.getAttribute('data-branch').toUpperCase();
+            const year = row.getAttribute('data-year').toUpperCase();
+            const acad = row.getAttribute('data-acad').toUpperCase();
+            const div = row.getAttribute('data-div').toUpperCase();
+            const name = row.cells[2].textContent.toUpperCase(); 
+            const skills = row.cells[4].textContent.toUpperCase(); 
+
+            let matchStatus = true;
+            if (currentStatusFilter !== 'all') {
+                if (currentStatusFilter === 'Open') matchStatus = (status === 'Open' || status === 'Rejected');
+                else matchStatus = (status === currentStatusFilter);
+            }
+
+            let matchBranch = (branchVal === 'ALL' || branch.includes(branchVal));
+            let matchYear = (yearVal === 'ALL' || year.includes(yearVal));
+            let matchAcad = (acadVal === '' || acad.includes(acadVal));
+            let matchDiv = (divVal === '' || div.includes(divVal));
+            let matchSearch = (name.indexOf(searchInput) > -1 || skills.indexOf(searchInput) > -1);
+
+            if (matchStatus && matchBranch && matchYear && matchAcad && matchDiv && matchSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function searchTable() {
+        applyFilters(); 
+    }
+
+    // --- MODAL LOGIC WITH EXPERIENCE & INTERNSHIPS ---
+    function openModal(name, email, skills, status, classInfo, cgpa, resume, rowElement) {
+        document.getElementById('modalName').innerText = name;
+        document.getElementById('modalEmail').innerText = email;
+        document.getElementById('modalInitials').innerText = name.charAt(0);
+        document.getElementById('modalEmailLink').href = `mailto:${email}`;
+        document.getElementById('emailActionBtn').href = `mailto:${email}`;
+
+        document.getElementById('modalEdu').innerText = classInfo;
+        document.getElementById('modalCGPA').innerText = cgpa && cgpa !== 'None' ? cgpa : '-';
+
+        // Extract hidden Experience text
+        const expHtml = rowElement.querySelector('.exp-data-store').innerHTML;
+        document.getElementById('modalExperience').innerHTML = expHtml;
+
+        // Extract hidden Internship HTML
+        const internHtml = rowElement.querySelector('.intern-data-store').innerHTML;
+        document.getElementById('modalInternDates').innerHTML = internHtml;
+        
+        // Render Skills
+        const skillsContainer = document.getElementById('modalSkills');
+        skillsContainer.innerHTML = ''; 
+        if (skills && skills !== 'None') {
+            skills.split(',').forEach(skill => {
+                if(skill.trim() !== "") {
+                    const tag = document.createElement('span');
+                    tag.className = 'job-skill-tag';
+                    tag.innerText = skill.trim();
+                    skillsContainer.appendChild(tag);
+                }
+            });
+        } else { skillsContainer.innerHTML = '<span style="color:#64748b;">No skills listed.</span>'; }
+
+        // Render Status Badge
+        const badge = document.getElementById('modalStatus');
+        badge.className = 'badge'; 
+        badge.innerText = status;
+        if(status === 'Placed') badge.classList.add('badge-green');
+        else if(status === 'Interviewing') badge.classList.add('badge-yellow');
+        else if(status === 'Hold') badge.classList.add('badge-purple');
+        else badge.classList.add('badge-gray');
+
+        // Render Action Buttons
+        const resumeBtn = document.getElementById('modalResume');
+        const noDocsMsg = document.getElementById('noResumeMsg');
+        
+        if (resume && resume !== 'None' && resume !== '') {
+            resumeBtn.href = resume.startsWith('http') ? resume : `/static/uploads/${resume}`;
+            resumeBtn.style.display = 'inline-flex';
+            noDocsMsg.style.display = 'none';
+        } else { 
+            resumeBtn.style.display = 'none'; 
+            noDocsMsg.style.display = 'block';
+        }
+
+        // Show Modal
+        document.getElementById('studentModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('studentModal').classList.remove('active');
+    }
+    
+    // Close on click outside
+    document.getElementById('studentModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+{% block title %}Login - InternTrack{% endblock %}
+
+{% block auth_content %}
+<style>
+    /* DARK MODE LOGIN STYLES */
+    .login-body {
+        min-height: 85vh;
+        display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(circle at top, #1e293b, #0f172a); /* Dark Gradient */
+        padding: 20px;
+    }
+
+    .login-card {
+        background: #1e293b; /* Dark Card */
+        padding: 2.5rem;
+        border-radius: 24px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); /* Stronger shadow */
+        width: 100%; max-width: 400px;
+        border: 1px solid #334155; /* Dark Border */
+    }
+
+    /* NEW: Back to Home Link Style */
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+    }
+    .back-link:hover {
+        color: #6366f1; /* Primary Color Hover */
+        transform: translateX(-4px); /* Slide left animation */
+    }
+
+    .login-header { text-align: center; margin-bottom: 2rem; }
+    .login-header h2 { font-size: 1.75rem; font-weight: 800; color: #f8fafc; margin-bottom: 0.5rem; }
+    .login-header p { color: #94a3b8; font-size: 0.95rem; }
+
+    /* Dark Toggle Switch */
+    .role-toggle {
+        display: flex; background: #0f172a; padding: 5px;
+        border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid #334155;
+    }
+    .role-toggle button {
+        flex: 1; padding: 10px; border: none; background: transparent;
+        color: #94a3b8; font-weight: 600; cursor: pointer;
+        border-radius: 8px; transition: all 0.2s ease;
+    }
+    .role-toggle button.active {
+        background: #334155; color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .role-toggle button:hover:not(.active) { color: #fff; }
+
+    /* Dark Inputs */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+    
+    .form-group input {
+        width: 100%; padding: 12px;
+        border: 1px solid #334155; border-radius: 10px;
+        font-size: 0.95rem; transition: all 0.2s;
+        background: #0f172a; color: white;
+    }
+    .form-group input:focus { outline: none; border-color: #6366f1; background: #0f172a; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3); }
+
+    /* Centered Button */
+    .btn-primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+        color: white; border: none; border-radius: 10px;
+        font-weight: 600; cursor: pointer;
+        display: flex; justify-content: center; align-items: center;
+    }
+    .btn-primary:hover { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+</style>
+
+<div class="login-body">
+    <div class="login-card">
+        
+        <a href="{{ url_for('main.index') }}" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+
+        <div class="login-header">
+            <div style="font-size: 2rem; color: #6366f1; margin-bottom: 10px;">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <h2>Welcome Back</h2>
+            <p>Login to InternTrack</p>
+        </div>
+
+        <div class="role-toggle">
+            <button type="button" class="active" onclick="setRole('student', this)">Student</button>
+            <button type="button" onclick="setRole('faculty', this)">Faculty</button>
+            <button type="button" onclick="setRole('admin', this)">Admin</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('main.login') }}">
+            <input type="hidden" name="role_check" id="selected_role" value="student">
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="name@college.edu" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 1rem; margin-top: 10px;">
+                Sign In
+            </button>
+        </form>
+
+        <p style="margin-top: 1.5rem; color: #94a3b8; font-size: 0.9rem; text-align: center;">
+            Don't have an account? <a href="{{ url_for('main.register') }}" style="color: #6366f1; font-weight: 600; text-decoration: none;">Sign up</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    function setRole(role, btn) {
+        document.getElementById('selected_role').value = role;
+        document.querySelectorAll('.role-toggle button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+</script>
+{% endblock %}
