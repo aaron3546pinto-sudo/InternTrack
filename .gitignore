@@ -1,7 +1,11 @@
+# Ignore environment variables file containing secret keys, API credentials, and sensitive configurations
 .env
 
+# Ignore Python bytecode compiled files and cache directories generated during runtime
 __pycache__/
 *.pyc
 
+# Ignore all user-uploaded files inside the static/uploads directory...
 static/uploads/*
+# ...except for the .keep file, ensuring the empty uploads directory structure is preserved in Git
 !static/uploads/.keep
